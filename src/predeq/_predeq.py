@@ -66,7 +66,6 @@ def _compile_node(node):
 
 
 _NO_ARGS = ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[])
-_OUTER_FUN = partial(ast.FunctionDef, name='@outer_scope@', args=_NO_ARGS, decorator_list=[])
 
 
 def _compile_node_with_freevars(freevars, node):
@@ -80,13 +79,20 @@ def _compile_node_with_freevars(freevars, node):
     # the node is compiled in the scope of a dummy function which has those freevars defined.
     # The compiler then produces LOAD_DEREF instructions, and the bytecode is equal to original predicate's one.
 
-    outer_node = _compile_node(_OUTER_FUN(**_DUMMY_POSITION, body=[
-        ast.Assign(
-            [ast.Name(freevar, ctx=ast.Store(), **_DUMMY_POSITION) for freevar in freevars],
-            ast.Constant(None, **_DUMMY_POSITION),
-            **_DUMMY_POSITION),
-        node,
-    ]))
+    outer_node = _compile_node(ast.FunctionDef(
+        **_DUMMY_POSITION,
+        name='@outer_scope@',  # use a syntactically invalid name to avoid any potential name clashes
+        args=_NO_ARGS,
+        decorator_list=[],
+        body=[
+            ast.Assign(
+                [ast.Name(freevar, ctx=ast.Store(), **_DUMMY_POSITION) for freevar in freevars],
+                ast.Constant(None, **_DUMMY_POSITION),
+                **_DUMMY_POSITION
+            ),
+            node,
+        ],
+    ))
     # get inner node's code object from outer node's co_consts
     # python <= 3.10: co_consts = (None, <code object from node>, 'func_name')
     # python >= 3.11: co_consts = (None, <code object from node>)
