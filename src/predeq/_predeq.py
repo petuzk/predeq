@@ -49,7 +49,7 @@ def _get_pred_body(predicate) -> 'str | None':
 
     # there is more than one, prepend first and second to the iterator and compare by bytecode
     freevars = predicate.__code__.co_freevars
-    compile_node = _compile_simple if not freevars else partial(_compile_with_freevars, freevars)
+    compile_node = _compile_node if not freevars else partial(_compile_node_with_freevars, freevars)
     for node in chain((first, second), nodes):
         code = compile_node(ast.Expr(node, **_DUMMY_POSITION) if looking_for_lambda else node)
         if code.co_code == predicate.__code__.co_code:
@@ -58,19 +58,18 @@ def _get_pred_body(predicate) -> 'str | None':
     return None
 
 
-def _compile_node_in_module(node):
-    return compile(ast.Module([node], []), '<dummy>', 'exec')
-
-
-def _compile_simple(node):
-    return _compile_node_in_module(node).co_consts[-2]  # co_consts = (<code object from node>, None)
+def _compile_node(node):
+    # get node's code object from module's co_consts
+    # python <= 3.10: co_consts = (<code object from node>, 'func_name', None)
+    # python >= 3.11: co_consts = (<code object from node>, None)
+    return compile(ast.Module([node], []), '<dummy>', 'exec').co_consts[0]
 
 
 _NO_ARGS = ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[])
 _OUTER_FUN = partial(ast.FunctionDef, name='@outer_scope@', args=_NO_ARGS, decorator_list=[])
 
 
-def _compile_with_freevars(freevars, node):
+def _compile_node_with_freevars(freevars, node):
     """Compile `node` in the function scope with `freevars` defined."""
 
     # When `node` is compiled in module scope, names other than its arguments are loaded from global scope
@@ -81,12 +80,17 @@ def _compile_with_freevars(freevars, node):
     # the node is compiled in the scope of a dummy function which has those freevars defined.
     # The compiler then produces LOAD_DEREF instructions, and the bytecode is equal to original predicate's one.
 
-    return _compile_node_in_module(_OUTER_FUN(**_DUMMY_POSITION, body=[
+    outer_node = _compile_node(_OUTER_FUN(**_DUMMY_POSITION, body=[
         ast.Assign(
             [ast.Name(freevar, ctx=ast.Store(), **_DUMMY_POSITION) for freevar in freevars],
-            ast.Constant(None, **_DUMMY_POSITION), **_DUMMY_POSITION),
+            ast.Constant(None, **_DUMMY_POSITION),
+            **_DUMMY_POSITION),
         node,
-    ])).co_consts[-2].co_consts[-1]
+    ]))
+    # get inner node's code object from outer node's co_consts
+    # python <= 3.10: co_consts = (None, <code object from node>, 'func_name')
+    # python >= 3.11: co_consts = (None, <code object from node>)
+    return outer_node.co_consts[1]
 
 
 def islambda(obj):
