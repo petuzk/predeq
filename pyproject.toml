@@ -2,7 +2,7 @@
 name = "predeq"
 version = "0.0.1"
 authors = [
-  { name="Taras Radchenko", email="petuzk.dev@gmail.com" },
+    { name="Taras Radchenko", email="petuzk.dev@gmail.com" },
 ]
 description = "Predicate-based equivalence testing"
 readme = "README.md"
@@ -11,7 +11,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Topic :: Software Development :: Testing",
 ]
+
+[project.urls]
+Homepage = "https://github.com/petuzk/predeq"
 
 [build-system]
 requires = ["hatchling"]
