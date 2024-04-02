@@ -17,6 +17,7 @@ class predeq:
 
 
 _DUMMY_POSITION = {'lineno': 1, 'col_offset': 0}
+_ENABLE_ONE_NODE_SHORT_PATH = True  # see _get_pred_body() below
 
 
 def _get_pred_body(predicate) -> 'str | None':
@@ -33,24 +34,29 @@ def _get_pred_body(predicate) -> 'str | None':
     #   - in pytest environment, because of assertion rewrite, source offsets are not entirely correct,
     #     and might include the whole assert statement or even the whole test function.
     # Solution: parse the AST of whatever `getsource()` returns, and find the function or lambda node
-    # which compiles to the same bytecode as original predicate. If there is only one function or lambda,
-    # we can assume it is the one we need (to avoid unnecessary compilation).
+    # which compiles to the same bytecode as original predicate.
 
     looking_for_lambda = islambda(predicate)
     nodes = filter_instance(ast.Lambda if looking_for_lambda else ast.FunctionDef, ast.walk(ast.parse(full_source)))
 
-    if (first := next(nodes, None)) is None:
-        # no func/lambda node found in AST, should not happen
-        return None
+    # _ENABLE_ONE_NODE_SHORT_PATH enables "short path": if there is only one function node in AST of the source
+    # returned by `getsource()`, it is assumed that this is the function we are looking source code for.
+    # It is enabled by default, but omitted in tests to verify this assumption and bytecode comparison code.
+    if _ENABLE_ONE_NODE_SHORT_PATH:
+        if (first := next(nodes, None)) is None:
+            # no func/lambda node found in AST, should not happen
+            return None
 
-    if (second := next(nodes, None)) is None:
-        # there is only `first` node, return its source segment
-        return ast.get_source_segment(full_source, first)
+        if (second := next(nodes, None)) is None:
+            # there is only `first` node, return its source segment
+            return ast.get_source_segment(full_source, first)
 
-    # there is more than one, prepend first and second to the iterator and compare by bytecode
+        # there is more than one, prepend first and second to the iterator and compare by bytecode
+        nodes = chain((first, second), nodes)
+
     freevars = predicate.__code__.co_freevars
     compile_node = _compile_node if not freevars else partial(_compile_node_with_freevars, freevars)
-    for node in chain((first, second), nodes):
+    for node in nodes:
         code = compile_node(ast.Expr(node, **_DUMMY_POSITION) if looking_for_lambda else node)
         if code.co_code == predicate.__code__.co_code:
             return ast.get_source_segment(full_source, node)
