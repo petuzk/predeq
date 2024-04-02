@@ -37,6 +37,8 @@ def test_inner_func():
 
 
 def test_lambda_with_capture():
+    # captured variables are retrieved using different instruction, so bytecode will differ
+    # this test ensures that this is taken into account when recompiling source AST
     captured = 123
     assert repr(predeq(lambda obj: obj + captured)) == '<predeq to meet lambda obj: obj + captured>'
 
@@ -50,3 +52,17 @@ def test_callable_instance():
             return f'{type(self).__name__}()'
 
     assert repr(predeq(Negator())) == '<predeq to meet Negator()>'
+
+
+def test_lambda_with_default_param():
+    assert repr(predeq(lambda obj, isinst=isinstance: isinst(obj, str))) == (
+        '<predeq to meet lambda obj, isinst=isinstance: isinst(obj, str)>'
+    )
+
+    assert repr(predeq(lambda obj, *, isinst=isinstance: isinst(obj, str))) == (
+        '<predeq to meet lambda obj, *, isinst=isinstance: isinst(obj, str)>'
+    )
+
+    assert repr(predeq(lambda obj, /, isinst=isinstance: isinst(obj, str))) == (
+        '<predeq to meet lambda obj, /, isinst=isinstance: isinst(obj, str)>'
+    )

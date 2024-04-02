@@ -1,6 +1,6 @@
 import ast
 from functools import cached_property, partial
-from inspect import getsource, isfunction
+from inspect import getsource, iscode, isfunction
 from itertools import chain
 
 
@@ -73,11 +73,13 @@ def _get_callable_source(predicate) -> 'str | None':
     return None
 
 
+def _find_code(iterable, *default):
+    return next(filter(iscode, iterable), *default)
+
+
 def _compile_node(node):
     # get node's code object from module's co_consts
-    # python <= 3.10: co_consts = (<code object from node>, 'func_name', None)
-    # python >= 3.11: co_consts = (<code object from node>, None)
-    return compile(ast.Module([node], []), '<dummy>', 'exec').co_consts[0]
+    return _find_code(compile(ast.Module([node], []), '<dummy>', 'exec').co_consts)
 
 
 _NO_ARGS = ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[])
@@ -94,7 +96,8 @@ def _compile_node_with_freevars(freevars, node):
     # the node is compiled in the scope of a dummy function which has those freevars defined.
     # The compiler then produces LOAD_DEREF instructions, and the bytecode is equal to original predicate's one.
 
-    outer_node = _compile_node(ast.FunctionDef(
+    # get inner node's code object from outer node's co_consts
+    return _find_code(_compile_node(ast.FunctionDef(
         **_DUMMY_POSITION,
         name='@outer_scope@',  # use a syntactically invalid name to avoid any potential name clashes
         args=_NO_ARGS,
@@ -107,11 +110,7 @@ def _compile_node_with_freevars(freevars, node):
             ),
             node,
         ],
-    ))
-    # get inner node's code object from outer node's co_consts
-    # python <= 3.10: co_consts = (None, <code object from node>, 'func_name')
-    # python >= 3.11: co_consts = (None, <code object from node>)
-    return outer_node.co_consts[1]
+    )).co_consts)
 
 
 def islambda(obj):
