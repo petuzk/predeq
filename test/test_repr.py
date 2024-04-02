@@ -20,31 +20,33 @@ def enable_one_node_short_path(monkeypatch, request):
 
 
 def test_lambda_single_line():
-    assert repr(predeq(lambda obj: obj % 2 == 0)) == '<lambda obj: obj % 2 == 0>'
+    assert repr(predeq(lambda obj: obj % 2 == 0)) == '<predeq to meet lambda obj: obj % 2 == 0>'
 
 
 def test_lambda_multiline():
     assert repr(predeq(
         lambda obj: obj % 2 == 0
-    )) == '<lambda obj: obj % 2 == 0>'
+    )) == '<predeq to meet lambda obj: obj % 2 == 0>'
 
 
 def test_inner_func():
-    def pred(obj):
+    def is_none(obj):
         return obj is None
 
-    assert repr(predeq(pred)) == '<def pred(obj):\n        return obj is None>'
+    assert repr(predeq(is_none)) == '<predeq to meet is_none>'
 
 
 def test_lambda_with_capture():
     captured = 123
-    assert repr(predeq(lambda obj: obj + captured)) == '<lambda obj: obj + captured>'
+    assert repr(predeq(lambda obj: obj + captured)) == '<predeq to meet lambda obj: obj + captured>'
 
 
-class Callable:
-    def __call__(self, obj):
-        return not obj
+def test_callable_instance():
+    class Negator:
+        def __call__(self, obj):
+            return not obj
 
+        def __repr__(self) -> str:
+            return f'{type(self).__name__}()'
 
-def test_custom_callable():
-    assert repr(predeq(Callable())) == '<def __call__(self, obj):\n        return not obj>'
+    assert repr(predeq(Negator())) == '<predeq to meet Negator()>'

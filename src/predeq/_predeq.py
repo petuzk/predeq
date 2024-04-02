@@ -11,12 +11,12 @@ class predeq:
     @cached_property
     def _cached_repr(self):
         predicate = (
-            _get_pred_body(self.pred)
-            or getattr(self.pred, '__qualname__')
-            or getattr(self.pred, '__name__')
+            # show source for lambdas, but __name__ for functions (function body might be too long)
+            (_get_callable_source(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
+            # if not available, fallback to repr
             or repr(self.pred)
         )
-        return f'<{predicate}>'
+        return f'<predeq to meet {predicate}>'
 
     def __repr__(self) -> str:
         return self._cached_repr
@@ -29,7 +29,7 @@ _DUMMY_POSITION = {'lineno': 1, 'col_offset': 0}
 _ENABLE_ONE_NODE_SHORT_PATH = True  # see _get_pred_body() below
 
 
-def _get_pred_body(predicate) -> 'str | None':
+def _get_callable_source(predicate) -> 'str | None':
     if not isfunction(predicate) and hasattr(predicate, '__call__'):
         predicate = predicate.__call__
 
