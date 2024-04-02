@@ -1,5 +1,5 @@
 import ast
-from functools import partial
+from functools import cached_property, partial
 from inspect import getsource, isfunction
 from itertools import chain
 
@@ -7,10 +7,19 @@ from itertools import chain
 class predeq:
     def __init__(self, predicate) -> None:
         self.pred = predicate
-        self.source = _get_pred_body(predicate)
+
+    @cached_property
+    def _cached_repr(self):
+        predicate = (
+            _get_pred_body(self.pred)
+            or getattr(self.pred, '__qualname__')
+            or getattr(self.pred, '__name__')
+            or repr(self.pred)
+        )
+        return f'<{predicate}>'
 
     def __repr__(self) -> str:
-        return '<' + self.source + '>'
+        return self._cached_repr
 
     def __eq__(self, other):
         return self.pred(other)
