@@ -18,6 +18,11 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/petuzk/predeq"
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
