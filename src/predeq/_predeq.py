@@ -45,8 +45,14 @@ def _get_callable_source(clbl) -> 'str | None':
     # Solution: parse the AST of whatever `getsource()` returns, and find the function or lambda node
     # which compiles to the same bytecode as original callable.
 
+    try:
+        tree = ast.parse(full_source)
+    except SyntaxError:
+        # the context available in `full_source` is not a valid code on its own
+        return None
+
     looking_for_lambda = islambda(clbl)
-    nodes = filter_instance(ast.Lambda if looking_for_lambda else ast.FunctionDef, ast.walk(ast.parse(full_source)))
+    nodes = filter_instance(ast.Lambda if looking_for_lambda else ast.FunctionDef, ast.walk(tree))
 
     # _ENABLE_ONE_NODE_SHORT_PATH enables "short path": if there is only one function node in AST of the source
     # returned by `getsource()`, it is assumed that this is the function we are looking source code for.

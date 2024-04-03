@@ -3,6 +3,8 @@ Hint: `PYTEST _DONT _REWRITE` in docstring (spelled with no spaces) disables ass
 and causes co_positions to be correct and inspect.getsource() returning less context
 """
 
+import re
+
 import pytest
 
 from predeq import predeq
@@ -66,3 +68,12 @@ def test_lambda_with_default_param():
     assert repr(predeq(lambda obj, /, isinst=isinstance: isinst(obj, str))) == (
         '<predeq to meet lambda obj, /, isinst=isinstance: isinst(obj, str)>'
     )
+
+
+def test_lambda_in_dict():
+    dummy_dict = {
+        'result': 'error',
+        'message': predeq(lambda msg: isinstance(msg, str))
+    }
+    # TODO: improve source search algorithm to handle incomplete context returned by getsource()
+    assert re.fullmatch('<predeq to meet <function .* at .*>>', repr(dummy_dict['message']))
