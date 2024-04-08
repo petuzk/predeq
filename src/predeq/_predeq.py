@@ -1,7 +1,11 @@
 import ast
+import dis
+import re
+import sys
+from collections import deque
 from functools import cached_property, partial
-from inspect import getsource, iscode, isfunction
-from itertools import chain
+from inspect import getsourcelines, iscode, isfunction
+from itertools import accumulate, chain
 
 
 class predeq:
@@ -27,7 +31,7 @@ class predeq:
 
 def _get_lambda_source(lambda_func) -> str | None:
     try:
-        source = getsource(lambda_func)
+        lines, lnum = getsourcelines(lambda_func)
     except OSError:
         return None
 
@@ -38,7 +42,41 @@ def _get_lambda_source(lambda_func) -> str | None:
     # Solution: parse the AST of whatever `getsource()` returns, and find the function or lambda node
     # which compiles to the same bytecode as original callable.
 
-    return _get_lambda_source_ast(source, lambda_func)
+    return (
+        (_get_lambda_source_co_positions(lines, lnum, lambda_func) if sys.version_info >= (3, 11) else None)
+        or _get_lambda_source_ast(''.join(lines), lambda_func)
+    )
+
+
+_LAMBDA_PATTERN = re.compile(br'(?<!\w)(lambda)\W', re.ASCII)
+
+
+def _get_lambda_source_co_positions(lines, lnum, lambda_func) -> 'str | None':
+    # col_offset and end_col_offset are given in bytes, so the source code is encoded into byte strings
+    # TODO: figure out the encoding of original source code
+    lines = list(map(str.encode, lines))
+
+    # prepare the `source` and `offsets` of line starts in it
+    source = b''.join(lines)
+    offsets = dict(enumerate(accumulate(map(len, lines[:-1]), initial=0), start=lnum))
+
+    # find lambda body span (code after a colon) from instructions' positions
+    body_start_offsets, body_end_offsets = zip(*(
+        (offsets[pos.lineno] + pos.col_offset, offsets[pos.end_lineno] + pos.end_col_offset)
+        for instr in dis.get_instructions(lambda_func)
+        # some instructions have zeroed both col_offset and end_col_offset, those are filtered out
+        if (pos := instr.positions).col_offset or pos.end_col_offset
+    ))
+
+    # now find the lambda keyword closest to the body
+    matches = deque(_LAMBDA_PATTERN.finditer(source[:min(body_start_offsets)]), maxlen=1)
+    try:
+        lambda_match = matches[-1]
+    except IndexError:
+        # deque is empty because no matches was found
+        return None
+
+    return source[lambda_match.start():max(body_end_offsets)].decode()
 
 
 _DUMMY_POSITION = {'lineno': 1, 'col_offset': 0}

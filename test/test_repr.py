@@ -3,7 +3,7 @@ Hint: `PYTEST _DONT _REWRITE` in docstring (spelled with no spaces) disables ass
 and causes co_positions to be correct and inspect.getsource() returning less context
 """
 
-import re
+import sys
 
 import pytest
 
@@ -14,6 +14,9 @@ from predeq import predeq
 # The goal is to test "production" version ("short" path), but also test bytecode comparison
 # more thoroughly by having more testcases running into it ("long" path).
 pytestmark = pytest.mark.parametrize('enable_one_node_short_path', (True, False), indirect=True, ids=('short', 'long'))
+
+# not mark.skip to ensure that the testcase indeed fails on pre-3.11
+requires_3_11 = pytest.mark.xfail(sys.version_info <= (3, 11), reason='requires python3.11 or higher')
 
 
 @pytest.fixture(autouse=True)
@@ -70,10 +73,29 @@ def test_lambda_with_default_param():
     )
 
 
+@requires_3_11
 def test_lambda_in_dict():
     dummy_dict = {
         'result': 'error',
-        'message': predeq(lambda msg: isinstance(msg, str))
+        'message': predeq(lambda msg: isinstance(msg, str)),
     }
-    # TODO: improve source search algorithm to handle incomplete context returned by getsource()
-    assert re.fullmatch('<predeq to meet <function .* at .*>>', repr(dummy_dict['message']))
+    assert repr(dummy_dict['message']) == '<predeq to meet lambda msg: isinstance(msg, str)>'
+
+
+@requires_3_11
+def test_multiline_lambda_in_dict():
+    dummy_dict = {
+        'result': 'error',
+        'message': predeq(lambda msg: isinstance(
+            msg, str)),
+    }
+    assert repr(dummy_dict['message']) == '<predeq to meet lambda msg: isinstance(\n            msg, str)>'
+
+
+@requires_3_11
+def test_multiline_lambda_in_dict_utf8():
+    dummy_dict = {
+        'result': 'error',
+        'message': predeq(lambda wiadomość: isinstance(wiadomość, str)),
+    }
+    assert repr(dummy_dict['message']) == '<predeq to meet lambda wiadomość: isinstance(wiadomość, str)>'
