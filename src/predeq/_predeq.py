@@ -9,7 +9,7 @@ from itertools import accumulate, chain
 
 
 class predeq:
-    def __init__(self, predicate, repr: 'str | None') -> None:
+    def __init__(self, predicate, repr: 'str | None' = None) -> None:
         self.pred = predicate
         self.repr = repr
 
