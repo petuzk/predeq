@@ -9,11 +9,12 @@ from itertools import accumulate, chain
 
 
 class predeq:
-    def __init__(self, predicate) -> None:
+    def __init__(self, predicate, repr: 'str | None') -> None:
         self.pred = predicate
+        self.repr = repr
 
     @cached_property
-    def _cached_repr(self):
+    def _default_repr(self):
         predicate = (
             # show source for lambdas, but __name__ for functions (function body might be too long)
             (_get_lambda_repr(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
@@ -23,7 +24,9 @@ class predeq:
         return f'<predeq to meet {predicate}>'
 
     def __repr__(self) -> str:
-        return self._cached_repr
+        if self.repr is not None:
+            return self.repr
+        return self._default_repr
 
     def __eq__(self, other):
         return self.pred(other)
