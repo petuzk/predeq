@@ -12,7 +12,7 @@ class predeq:
     def _cached_repr(self):
         predicate = (
             # show source for lambdas, but __name__ for functions (function body might be too long)
-            (_get_callable_source(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
+            (_get_lambda_source(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
             # if not available, fallback to repr
             or repr(self.pred)
         )
@@ -25,16 +25,9 @@ class predeq:
         return self.pred(other)
 
 
-_DUMMY_POSITION = {'lineno': 1, 'col_offset': 0}
-_ENABLE_ONE_NODE_SHORT_PATH = True  # see _get_pred_body() below
-
-
-def _get_callable_source(clbl) -> 'str | None':
-    if not isfunction(clbl) and hasattr(clbl, '__call__'):
-        clbl = clbl.__call__
-
+def _get_lambda_source(lambda_func) -> str | None:
     try:
-        full_source = getsource(clbl).strip()
+        source = getsource(lambda_func)
     except OSError:
         return None
 
@@ -45,14 +38,23 @@ def _get_callable_source(clbl) -> 'str | None':
     # Solution: parse the AST of whatever `getsource()` returns, and find the function or lambda node
     # which compiles to the same bytecode as original callable.
 
+    return _get_lambda_source_ast(source, lambda_func)
+
+
+_DUMMY_POSITION = {'lineno': 1, 'col_offset': 0}
+_ENABLE_ONE_NODE_SHORT_PATH = True  # see _get_lambda_source_ast() below
+
+
+def _get_lambda_source_ast(source, lambda_func) -> 'str | None':
+    source = source.lstrip()  # remove leading whitespace so that it's not interpreted as indent
+
     try:
-        tree = ast.parse(full_source)
+        tree = ast.parse(source)
     except SyntaxError:
-        # the context available in `full_source` is not a valid code on its own
+        # the context available in `source` is not a valid code on its own
         return None
 
-    looking_for_lambda = islambda(clbl)
-    nodes = filter_instance(ast.Lambda if looking_for_lambda else ast.FunctionDef, ast.walk(tree))
+    nodes = filter_instance(ast.Lambda, ast.walk(tree))
 
     # _ENABLE_ONE_NODE_SHORT_PATH enables "short path": if there is only one function node in AST of the source
     # returned by `getsource()`, it is assumed that this is the function we are looking source code for.
@@ -64,17 +66,17 @@ def _get_callable_source(clbl) -> 'str | None':
 
         if (second := next(nodes, None)) is None:
             # there is only `first` node, return its source segment
-            return ast.get_source_segment(full_source, first)
+            return ast.get_source_segment(source, first)
 
         # there is more than one, prepend first and second to the iterator and compare by bytecode
         nodes = chain((first, second), nodes)
 
-    compile_node = _get_node_compiler(clbl.__code__)
+    compile_node = _get_node_compiler(lambda_func.__code__)
     for node in nodes:
         # lambda node has to be wrapped into Expr to be compiled, see `echo lambda:0 | python -m ast`
-        code = compile_node(ast.Expr(node, **_DUMMY_POSITION) if looking_for_lambda else node)
-        if code.co_code == clbl.__code__.co_code:
-            return ast.get_source_segment(full_source, node)
+        code = compile_node(ast.Expr(node, **_DUMMY_POSITION))
+        if code.co_code == lambda_func.__code__.co_code:
+            return ast.get_source_segment(source, node)
 
     return None
 
