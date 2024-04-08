@@ -16,7 +16,7 @@ class predeq:
     def _cached_repr(self):
         predicate = (
             # show source for lambdas, but __name__ for functions (function body might be too long)
-            (_get_lambda_source(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
+            (_get_lambda_repr(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
             # if not available, fallback to repr
             or repr(self.pred)
         )
@@ -29,7 +29,7 @@ class predeq:
         return self.pred(other)
 
 
-def _get_lambda_source(lambda_func) -> str | None:
+def _get_lambda_repr(lambda_func) -> 'str | None':
     try:
         lines, lnum = getsourcelines(lambda_func)
     except OSError:
@@ -42,10 +42,16 @@ def _get_lambda_source(lambda_func) -> str | None:
     # Solution: parse the AST of whatever `getsource()` returns, and find the function or lambda node
     # which compiles to the same bytecode as original callable.
 
-    return (
+    source = (
         (_get_lambda_source_co_positions(lines, lnum, lambda_func) if sys.version_info >= (3, 11) else None)
         or _get_lambda_source_ast(''.join(lines), lambda_func)
     )
+    if not source:
+        return None
+    if (newline_pos := source.find('\n')) >= 0:
+        # multiline lambda is rather rarely used, but the \n in the middle makes repr ugly
+        source = source[:newline_pos] + '...'
+    return source
 
 
 _LAMBDA_PATTERN = re.compile(br'(?<!\w)(lambda)\W', re.ASCII)

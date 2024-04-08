@@ -89,7 +89,7 @@ def test_multiline_lambda_in_dict():
         'message': predeq(lambda msg: isinstance(
             msg, str)),
     }
-    assert repr(dummy_dict['message']) == '<predeq to meet lambda msg: isinstance(\n            msg, str)>'
+    assert repr(dummy_dict['message']) == '<predeq to meet lambda msg: isinstance(...>'
 
 
 @requires_3_11
