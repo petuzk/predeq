@@ -38,12 +38,21 @@ def _get_lambda_repr(lambda_func) -> 'str | None':
     except OSError:
         return None
 
-    # Problem: the source code returned by inspect.get_source() often has unwanted additional context, such as:
-    #   - the statement where lambda is defined (e.g. "x = lambda: None" or "print(getsource(lambda: None))")
-    #   - in pytest environment, because of assertion rewrite, source offsets are not entirely correct,
-    #     and might include the whole assert statement or even the whole test function.
-    # Solution: parse the AST of whatever `getsource()` returns, and find the function or lambda node
-    # which compiles to the same bytecode as original callable.
+    # Problem: the source code returned by inspect.getsourcelines() has unwanted additional context, such as:
+    #   1. The statement where lambda is defined (e.g. "x = lambda: None" or "print(getsource(lambda: None))")
+    #   2. Lambdas defined in assertions rewritten by pytest source offsets cover the whole assert statement
+    #      (which could also contain multiple lambda definitions)
+    #
+    # There are two solutions for this problem, each adressing it only partially:
+    #   1. Use __code__.co_positions
+    #      Pros: solves problem #1
+    #      Cons: available in Python 3.11+ only, does not work with rewritten assertions where offsets are incorrect
+    #   2. Parse the found source into AST, and find the lambda node corresponding to the searched lambda
+    #      by compiling the node and comparing bytecode
+    #      Pros: solves problem #2, and #1 given that the source is a valid Python code
+    #      Cons: the source might not be a valid code if lambda is a part of multiline expression
+    #
+    # In case no solution is able to precisely locate the lambda definition, return None.
 
     source = (
         (_get_lambda_source_co_positions(lines, lnum, lambda_func) if sys.version_info >= (3, 11) else None)
