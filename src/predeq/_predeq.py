@@ -58,8 +58,7 @@ _LAMBDA_PATTERN = re.compile(br'(?<!\w)(lambda)\W', re.ASCII)
 
 
 def _get_lambda_source_co_positions(lines, lnum, lambda_func) -> 'str | None':
-    # col_offset and end_col_offset are given in bytes, so the source code is encoded into byte strings
-    # TODO: figure out the encoding of original source code
+    # according to python data model, "column information is 0-indexed utf-8 byte offsets", so work on encoded source
     lines = list(map(str.encode, lines))
 
     # prepare the `source` and `offsets` of line starts in it
