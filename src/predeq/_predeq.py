@@ -9,6 +9,26 @@ from itertools import accumulate, chain
 
 
 class predeq:
+    """predeq(predicate) -> predeq object
+
+    Return an object which compares equal to any object X for which predicate(X) returns True.
+
+        >>> even = predeq(lambda x: x % 2 == 0)
+        >>> 2 == even
+        True
+        >>> 5 == even
+        False
+
+    No exceptions are handled by predeq.
+    It is the user's choice whether the comparison might raise.
+
+        >>> None == even
+        Traceback (most recent call last):
+            ...
+        TypeError: unsupported operand type(s) for %: 'NoneType' and 'int'
+
+    """
+
     def __init__(self, predicate, repr: 'str | None' = None) -> None:
         self.pred = predicate
         self.repr = repr
