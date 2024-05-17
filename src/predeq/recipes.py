@@ -2,6 +2,14 @@ import re
 
 from ._predeq import predeq
 
+__all__ = (
+    'ANY',
+    'NOT_NONE',
+    'exception',
+    'instanceof',
+    'matches_re',
+)
+
 
 ANY = predeq(lambda _: True, repr='<ANY>')
 """An object which compares equal to any object. Equivalent to `unittest.mock.ANY`, but implemented with `predeq`."""
