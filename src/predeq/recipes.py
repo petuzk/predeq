@@ -50,8 +50,12 @@ def instanceof(*classes) -> predeq:
     """
     return predeq(
         lambda obj: isinstance(obj, classes),
-        repr=f'{instanceof.__name__}{classes}'
+        repr=f'{instanceof.__name__}({", ".join(map(_repr_class, classes))})'
     )
+
+
+def _repr_class(klass):
+    return klass.__name__ if isinstance(klass, type) else repr(klass)
 
 
 def matches_re(regex) -> predeq:
