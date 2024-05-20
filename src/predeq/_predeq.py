@@ -60,8 +60,8 @@ def _get_lambda_repr(lambda_func) -> 'str | None':
 
     # Problem: the source code returned by inspect.getsourcelines() has unwanted additional context, such as:
     #   1. The statement where lambda is defined (e.g. "x = lambda: None" or "print(getsource(lambda: None))")
-    #   2. Lambdas defined in assertions rewritten by pytest source offsets cover the whole assert statement
-    #      (which could also contain multiple lambda definitions)
+    #   2. Lambdas that are defined in assertions rewritten by pytest have source offsets
+    #      cover the whole assert statement (which could also contain other lambda definitions)
     #
     # There are two solutions for this problem, each adressing it only partially:
     #   1. Use __code__.co_positions
@@ -143,7 +143,7 @@ def _get_lambda_source_ast(source, lambda_func) -> 'str | None':
             # there is only `first` node, return its source segment
             return ast.get_source_segment(source, first)
 
-        # there is more than one, prepend first and second to the iterator and compare by bytecode
+        # there is more than one, restore the iterator and compare by bytecode
         nodes = chain((first, second), nodes)
 
     compile_node = _get_node_compiler(lambda_func.__code__)
