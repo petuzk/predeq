@@ -37,7 +37,7 @@ class predeq:
     def _default_repr(self):
         predicate = (
             # show source for lambdas, but __name__ for functions (function body might be too long)
-            (_get_lambda_repr(self.pred) if islambda(self.pred) else getattr(self.pred, '__name__', None))
+            (_get_lambda_repr(self.pred) if _islambda(self.pred) else getattr(self.pred, '__name__', None))
             # if not available, fallback to repr
             or repr(self.pred)
         )
@@ -129,7 +129,7 @@ def _get_lambda_source_ast(source, lambda_func) -> 'str | None':
         # the context available in `source` is not a valid code on its own
         return None
 
-    nodes = filter_instance(ast.Lambda, ast.walk(tree))
+    nodes = _filter_instance(ast.Lambda, ast.walk(tree))
 
     # _ENABLE_ONE_NODE_SHORT_PATH enables "short path": if there is only one function node in AST of the source
     # returned by `getsource()`, it is assumed that this is the function we are looking source code for.
@@ -202,10 +202,10 @@ def _compile_node_with_freevars(freevars, node):
     )).co_consts)
 
 
-def islambda(obj):
+def _islambda(obj):
     # apparently there is no more reliable method than checking __name__
     return isfunction(obj) and obj.__name__ == '<lambda>'
 
 
-def filter_instance(class_or_tuple, iterable):
+def _filter_instance(class_or_tuple, iterable):
     return (obj for obj in iterable if isinstance(obj, class_or_tuple))
