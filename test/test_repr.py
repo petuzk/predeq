@@ -9,7 +9,6 @@ import pytest
 
 from predeq import predeq
 
-
 # Test source code finder with both "short" and "long" path (see _ENABLE_ONE_NODE_SHORT_PATH).
 # The goal is to test "production" version ("short" path), but also test bytecode comparison
 # more thoroughly by having more testcases running into it ("long" path).

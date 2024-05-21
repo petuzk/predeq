@@ -1,4 +1,5 @@
 import pytest
+
 from predeq import ANY, NOT_NONE, exception, instanceof, matches_re
 
 
