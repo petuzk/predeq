@@ -48,8 +48,8 @@ class predeq:
             return self.repr
         return self._default_repr
 
-    def __eq__(self, other):
-        return self.pred(other)
+    def __eq__(self, other) -> bool:
+        return not not self.pred(other)
 
 
 def _get_lambda_repr(lambda_func) -> 'str | None':
