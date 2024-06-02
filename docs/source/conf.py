@@ -29,8 +29,6 @@ intersphinx_mapping = {
 
 pygments_style = 'sphinx'
 
-master_doc = 'toctree'
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
