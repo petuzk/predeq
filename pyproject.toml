@@ -21,6 +21,7 @@ Source = "https://github.com/petuzk/predeq"
 
 [project.optional-dependencies]
 dev = [
+    "hypothesis==6.103.0",
     "pytest==8.2.1",
 ]
 
