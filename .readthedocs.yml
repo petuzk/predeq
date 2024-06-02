@@ -8,6 +8,7 @@ build:
 python:
   install:
     - requirements: docs/requirements.txt
+    - path: .  # install project itself so that the version can be retrieved with importlib.metadata.version
 
 sphinx:
   configuration: docs/source/conf.py
