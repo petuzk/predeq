@@ -10,12 +10,21 @@ __all__ = (
     'matches_re',
 )
 
+# Assign to __doc__ of module attributes below for nicer help(),
+# and for sphinx to find the documentation of these imported in __init__.
+# See https://github.com/sphinx-doc/sphinx/issues/6495
+
 
 ANY = predeq(lambda _: True, repr='<ANY>')
-"""An object which compares equal to any object. Equivalent to `unittest.mock.ANY`, but implemented with `predeq`."""
+ANY.__doc__ = \
+    """
+    An object which compares equal to any object.
+    Semantically equivalent to :external:py:data:`unittest.mock.ANY`, but implemented with :func:`predeq`.
+    """
 
 NOT_NONE = predeq(lambda obj: obj is not None, repr='<NOT_NONE>')
-"""An object which compares equal to any object except None."""
+NOT_NONE.__doc__ = \
+    """An object which compares equal to any object except None."""
 
 
 def exception(exc: BaseException) -> predeq:
@@ -36,7 +45,7 @@ def exception(exc: BaseException) -> predeq:
 def instanceof(*classes) -> predeq:
     """Create an object which compares equal to an instance of the given class(es) or its subclass(es).
 
-    This is a wrapper for `isinstance` checks, so it behaves exactly like `isinstance` does.
+    The equality is determined by :func:`isinstance`.
 
         >>> 2 == instanceof(int)
         True
@@ -58,16 +67,16 @@ def _repr_class(klass):
     return klass.__name__ if isinstance(klass, type) else repr(klass)
 
 
-def matches_re(regex) -> predeq:
+def matches_re(regex: 'str | re.Pattern') -> predeq:
     """Create an object which compares equal to strings matching the regular expression pattern.
 
     Return True if zero or more characters at the beginning of the tested string
-    match the regular expression (re.match behavior).
+    match the regular expression (:func:`re.match` behavior).
 
         >>> 'abc123' == matches_re(r'[a-z]+')
         True
 
-    The behavior of re.fullmatch can be enabled by using a dollar sign, which matches end of string.
+    The behavior of :func:`re.fullmatch` can be enabled by using a dollar sign, which matches end of string.
 
         >>> 'abc123' == matches_re(r'[a-z]+$')
         False

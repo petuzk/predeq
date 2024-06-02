@@ -11,7 +11,7 @@ from itertools import accumulate, chain
 class predeq:
     """predeq(predicate) -> predeq object
 
-    Return an object which compares equal to any object X for which predicate(X) returns True.
+    Return an object which compares equal to any object *X* for which *predicate(X)* returns True.
 
         >>> even = predeq(lambda x: x % 2 == 0)
         >>> 2 == even
