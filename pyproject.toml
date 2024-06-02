@@ -16,7 +16,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/petuzk/predeq"
+Homepage = "https://predeq.readthedocs.io"
+Source = "https://github.com/petuzk/predeq"
 
 [project.optional-dependencies]
 dev = [
