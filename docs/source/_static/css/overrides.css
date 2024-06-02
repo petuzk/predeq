@@ -1,0 +1,4 @@
+/* underline links in signatures */
+.sig-param>*>.reference.external {
+    text-decoration: underline;
+}
