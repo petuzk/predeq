@@ -20,7 +20,7 @@ Homepage = "https://github.com/petuzk/predeq"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
+    "pytest==8.2.1",
 ]
 
 [build-system]
@@ -29,6 +29,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 exclude = [
+    "/.github",
     "/test",
 ]
 
